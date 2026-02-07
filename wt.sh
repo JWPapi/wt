@@ -1,6 +1,6 @@
 # wt - git worktree manager
 #
-# Source this file in your .zshrc/.bashrc:
+# Source this file in your .profile/.bashrc/.zshrc:
 #   source /path/to/wt.sh
 
 wt() {
@@ -39,15 +39,31 @@ wt() {
       echo "wt - git worktree manager
 
 Usage:
-    wt <feature>       Create worktree, install deps, start dev server
-    wt ls | list       List worktrees with ports
-    wt rm <feature>    Remove worktree and branch
-    wt -h, --help      Show this help"
+    wt <feature>              Create worktree, install deps, start dev server
+    wt <feature> -c [args]    Create worktree, install deps, start Claude
+    wt <feature> -cdsp [args] Same but with --dangerously-skip-permissions
+    wt ls | list              List all worktrees with ports
+    wt rm <feature>           Remove worktree and delete branch
+    wt -h, --help             Show this help"
       ;;
     *)
       local feature="$1"
+      shift
       local worktree="${parent}/${project}-${feature}"
       local port=$(_wt_port "$feature")
+
+      # Parse flags
+      local mode="dev"
+      local claude_args=()
+      if [[ "${1:-}" == "-cdsp" ]]; then
+        mode="claude-dsp"
+        shift
+        claude_args=("$@")
+      elif [[ "${1:-}" == "-c" ]]; then
+        mode="claude"
+        shift
+        claude_args=("$@")
+      fi
 
       git worktree add "$worktree" -b "$feature" || return 1
       cd "$worktree" || return 1
@@ -56,7 +72,11 @@ Usage:
       printf '\n  Branch:  %s\n  Path:    %s\n  Server:  http://localhost:%s\n\n' \
         "$feature" "$worktree" "$port"
 
-      PORT=$port pnpm dev
+      case "$mode" in
+        claude-dsp) claude --dangerously-skip-permissions "${claude_args[@]}" ;;
+        claude)     claude "${claude_args[@]}" ;;
+        dev)        PORT=$port pnpm dev ;;
+      esac
       ;;
   esac
 }
