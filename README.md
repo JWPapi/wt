@@ -23,7 +23,8 @@ wt <feature>              Create worktree, install deps, start dev server
 wt <feature> -c [args]    Create worktree, install deps, start Claude
 wt <feature> -cdsp [args] Same but with --dangerously-skip-permissions
 wt ls | list              List all worktrees with ports
-wt rm <feature>           Remove worktree and delete branch
+wt rm [feature]           Remove worktree and delete branch (interactive if no arg)
+wt proxy                  Start reverse proxy on :3000 (<feature>.localhost routing)
 wt -h                     Show help
 ```
 
@@ -78,10 +79,31 @@ wt ls
 ### Remove a worktree
 
 ```bash
+# With argument — asks for confirmation
 wt rm auth-refactor
+
+# Without argument — shows worktrees, prompts for name, then confirms
+wt rm
 ```
 
-Removes the worktree directory and deletes the local branch.
+Must be run from the main worktree. Removes the worktree directory and deletes the local branch.
+
+### Reverse proxy
+
+```bash
+wt proxy
+```
+
+Starts a reverse proxy on `:3000` that routes `<feature>.localhost:3000` to the worktree's deterministic port. This lets you access any worktree dev server at a friendly URL:
+
+```
+auth-refactor.localhost:3000  →  localhost:3847
+fix-nav.localhost:3000        →  localhost:3219
+```
+
+WebSocket upgrades (HMR) are proxied automatically.
+
+> **Browser note:** Chrome and Firefox resolve `*.localhost` to `127.0.0.1` by default. Safari does not — add entries to `/etc/hosts` or use Chrome/Firefox.
 
 ## How ports work
 
@@ -95,5 +117,6 @@ port = (cksum(branch_name) % 997) + 3001
 
 - git
 - zsh or bash
+- Node.js (for `wt proxy`)
 - pnpm (for auto-install and dev server)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (optional, for `-c` / `-cdsp` flags)

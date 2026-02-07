@@ -30,8 +30,30 @@ wt() {
         esac
       done
       ;;
+    proxy)
+      node ~/wt/proxy.js
+      ;;
     rm)
-      local feature="${2:?Usage: wt rm <feature>}"
+      local current_wt=$(git rev-parse --show-toplevel 2>/dev/null)
+      if [[ "$current_wt" != "$main_wt" ]]; then
+        echo "error: run 'wt rm' from the main worktree ($main_wt)" >&2
+        return 1
+      fi
+
+      local feature="${2:-}"
+      if [[ -z "$feature" ]]; then
+        echo "Worktrees:"
+        wt ls
+        echo
+        printf "Feature to remove: "
+        read -r feature
+        [[ -z "$feature" ]] && echo "Aborted." && return 1
+      fi
+
+      printf "Remove worktree '%s'? [y/N] " "$feature"
+      read -r confirm
+      [[ "$confirm" != [yY] ]] && echo "Aborted." && return 0
+
       git worktree remove "${parent}/${project}-${feature}" && git branch -d "$feature" 2>/dev/null
       echo "Removed worktree and branch: $feature"
       ;;
@@ -43,7 +65,8 @@ Usage:
     wt <feature> -c [args]    Create worktree, install deps, start Claude
     wt <feature> -cdsp [args] Same but with --dangerously-skip-permissions
     wt ls | list              List all worktrees with ports
-    wt rm <feature>           Remove worktree and delete branch
+    wt rm [feature]           Remove worktree and delete branch (interactive if no arg)
+    wt proxy                  Start reverse proxy on :3000 (<feature>.localhost routing)
     wt -h, --help             Show this help"
       ;;
     *)
