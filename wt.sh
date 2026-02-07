@@ -30,6 +30,10 @@ wt() {
         esac
       done
       ;;
+    add)
+      shift
+      wt "$@"
+      ;;
     proxy)
       node ~/wt/proxy.js
       ;;
