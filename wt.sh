@@ -44,7 +44,18 @@ wt() {
         return 1
       fi
 
-      local feature="${2:-}"
+      shift  # consume 'rm'
+      local force=""
+      local feature=""
+
+      # Parse args: support both "wt rm add --force" and "wt rm --force add"
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --force|-f) force="--force"; shift ;;
+          *) feature="$1"; shift ;;
+        esac
+      done
+
       if [[ -z "$feature" ]]; then
         echo "Worktrees:"
         wt ls
@@ -54,11 +65,13 @@ wt() {
         [[ -z "$feature" ]] && echo "Aborted." && return 1
       fi
 
-      printf "Remove worktree '%s'? [y/N] " "$feature"
-      read -r confirm
-      [[ "$confirm" != [yY] ]] && echo "Aborted." && return 0
+      if [[ -z "$force" ]]; then
+        printf "Remove worktree '%s'? [y/N] " "$feature"
+        read -r confirm
+        [[ "$confirm" != [yY] ]] && echo "Aborted." && return 0
+      fi
 
-      git worktree remove "${parent}/${project}-${feature}" && git branch -d "$feature" 2>/dev/null
+      git worktree remove $force "${parent}/${project}-${feature}" && git branch -d "$feature" 2>/dev/null
       echo "Removed worktree and branch: $feature"
       ;;
     -h|--help|"")
