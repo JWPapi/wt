@@ -78,7 +78,8 @@ wt() {
       echo "wt - git worktree manager
 
 Usage:
-    wt <feature>              Create worktree, install deps, start dev server
+    wt <feature>              Create worktree and install deps
+    wt <feature> -d           Create worktree, install deps, start dev server
     wt <feature> -c [args]    Create worktree, install deps, start Claude
     wt <feature> -cdsp [args] Same but with --dangerously-skip-permissions
     wt ls | list              List all worktrees with ports
@@ -93,7 +94,7 @@ Usage:
       local port=$(_wt_port "$feature")
 
       # Parse flags
-      local mode="dev"
+      local mode=""
       local claude_args=()
       if [[ "${1:-}" == "-cdsp" ]]; then
         mode="claude-dsp"
@@ -103,6 +104,9 @@ Usage:
         mode="claude"
         shift
         claude_args=("$@")
+      elif [[ "${1:-}" == "-d" ]]; then
+        mode="dev"
+        shift
       fi
 
       git worktree add "$worktree" -b "$feature" || return 1
